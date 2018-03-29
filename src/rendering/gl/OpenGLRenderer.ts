@@ -346,13 +346,6 @@ class OpenGLRenderer {
     // TODO: if you significantly change your framework, ensure this doesn't cause bugs!
     // render to the first 8 bit buffer if there is more post, else default buffer
 
-    // if (this.post8Passes.length > 0) {
-    //   gl.bindFramebuffer(gl.FRAMEBUFFER, this.post8Buffers[0]);
-    // }
-    // else {
-    //   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    // }
-
     if (useToneMap) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
