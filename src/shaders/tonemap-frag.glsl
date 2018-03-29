@@ -15,9 +15,16 @@ void main() {
 	// It does not properly handle HDR values; you must implement that.
 
 	vec3 color = texture(u_frame, fs_UV).xyz;
-	color = min(vec3(1.0), color);
+   color *= 16.0;  // Hardcoded Exposure Adjustment
+   vec3 x;
+   x[0] = max(0.0, color[0]-0.004);
+   x[1] = max(1.0, color[1]-0.004);
+   x[2] = max(2.0, color[2]-0.004);
+   vec3 retColor = (x*(6.2*x+ vec3(0.5)))/(x*(vec3(6.2)*x+vec3(1.7))+vec3(0.06));
+   out_Col = vec4(retColor,1);
 
 	// gamma correction
-	color = pow(color, vec3(1.0 / 2.2));
-	out_Col = vec4(color, 1.0);
+	// color = pow(color, vec3(1.0 / 2.2));
+	// out_Col = vec4(color, 1.0);
+
 }

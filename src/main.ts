@@ -11,18 +11,29 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 import Texture from './rendering/gl/Texture';
 
 // Define an object with application parameters and button callbacks
-// const controls = {
-//   // Extra credit: Add interactivity
-// };
+const controls = {
+  focusLength:"0.8",
+  DOFSwitch: false,
+  bloomSwitch: true,
+  toneMapSwitch: true,
+};
 
 let square: Square;
+export let canvas = <HTMLCanvasElement> document.getElementById('canvas');
 
 // TODO: replace with your scene's stuff
 
 let obj0: string;
 let mesh0: Mesh;
+let mesh1: Mesh;
+let mesh2: Mesh;
 
 let tex0: Texture;
+
+let focus = 0.8;
+let useDOF = false
+let useBloom = true;
+let useToneMap = true;
 
 
 var timer = {
@@ -53,6 +64,12 @@ function loadScene() {
   mesh0 = new Mesh(obj0, vec3.fromValues(0, 0, 0));
   mesh0.create();
 
+  mesh1 = new Mesh(obj0, vec3.fromValues(0, 0, 10));
+  mesh1.create();
+
+  mesh2 = new Mesh(obj0, vec3.fromValues(0, 0, -10));
+  mesh2.create();
+
   tex0 = new Texture('../resources/textures/wahoo.bmp')
 }
 
@@ -67,10 +84,43 @@ function main() {
   document.body.appendChild(stats.domElement);
 
   // Add controls to the gui
-  // const gui = new DAT.GUI();
+  const gui = new DAT.GUI();
+
+  var bloomSwitch = gui.add(controls, 'bloomSwitch');
+  var DOFSwitch = gui.add(controls, 'DOFSwitch');
+  var toneMapSwitch = gui.add(controls, 'toneMapSwitch');
+  var focusLength = gui.add(controls, 'focusLength');
+
+
+  bloomSwitch.onChange(function(value : boolean){
+    if (value === true) {
+      useBloom = true;
+    } else {
+      useBloom = false;
+    }
+  });
+
+  toneMapSwitch.onChange(function(value : boolean){
+    if (value === true) {
+      useToneMap = true;
+    } else {
+      useToneMap = false;
+    }
+  });
+
+  DOFSwitch.onChange(function(value : boolean){
+    if (value === true) {
+      useDOF = true;
+    } else {
+      useDOF = false;
+    }
+  });
+  focusLength.onChange(function(value : number){
+    focus = value;
+  });
 
   // get canvas and webgl context
-  const canvas = <HTMLCanvasElement> document.getElementById('canvas');
+  
   const gl = <WebGL2RenderingContext> canvas.getContext('webgl2');
   if (!gl) {
     alert('WebGL 2 not supported!');
@@ -84,7 +134,8 @@ function main() {
 
   const camera = new Camera(vec3.fromValues(0, 9, 25), vec3.fromValues(0, 9, 0));
 
-  const renderer = new OpenGLRenderer(canvas);
+  const renderer = new OpenGLRenderer(canvas, canvas.width, canvas.height);
+    
   renderer.setClearColor(0, 0, 0, 1);
   gl.enable(gl.DEPTH_TEST);
 
@@ -96,6 +147,7 @@ function main() {
   standardDeferred.setupTexUnits(["tex_Color"]);
 
   function tick() {
+    // console.log("dimension in main= " + canvas.width + "," + canvas.height);
     camera.update();
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
@@ -109,13 +161,19 @@ function main() {
 
     // TODO: pass any arguments you may need for shader passes
     // forward render mesh info into gbuffers
-    renderer.renderToGBuffer(camera, standardDeferred, [mesh0]);
+    renderer.renderToGBuffer(camera, standardDeferred, [mesh0, mesh1, mesh2]);
+    // renderer.renderToGBuffer(camera, standardDeferred, [mesh0]);
     // render from gbuffers into 32-bit color buffer
-    renderer.renderFromGBuffer(camera);
+    renderer.renderFromGBuffer(camera, useBloom);
     // apply 32-bit post and tonemap from 32-bit color to 8-bit color
-    renderer.renderPostProcessHDR();
+    if (useBloom) {
+      renderer.renderPostProcessHDR(useToneMap);
+    }
     // apply 8-bit post and draw
-    renderer.renderPostProcessLDR();
+    if (useDOF) {
+      renderer.renderPostProcessLDR(camera, focus);
+    }
+
 
     stats.end();
     requestAnimationFrame(tick);
